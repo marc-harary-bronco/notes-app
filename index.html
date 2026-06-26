@@ -52,9 +52,9 @@
   }
   .brand { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
   .brand .dot {
-    width: 22px; height: 22px; border-radius: 7px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 45%, transparent);
+    width: 24px; height: 24px; border-radius: 7px;
+    background: url('icon-192.png') center/cover, #f6f4ec;
+    box-shadow: 0 1px 4px rgba(0,0,0,.18);
   }
   header h1 { font-size: 19px; margin: 0; font-weight: 750; letter-spacing: -.02em; }
   header .spacer { flex: 1; }
@@ -609,7 +609,7 @@ async function viewReminders() {
 function viewSettings(firstRun) {
   hideFab();
   app.innerHTML = `
-    ${firstRun ? '<div class="card-pane" style="margin-bottom:16px;display:flex;gap:12px;align-items:center"><div class="dot" style="width:34px;height:34px;border-radius:10px;flex:0 0 auto;background:linear-gradient(135deg,var(--accent),var(--accent2))"></div><div><b>Welcome to notes</b><div class="muted" style="font-size:13.5px">Paste a GitHub token to connect your notes.</div></div></div>' : ''}
+    ${firstRun ? '<div class="card-pane" style="margin-bottom:16px;display:flex;gap:12px;align-items:center"><div class="dot" style="width:34px;height:34px;border-radius:10px;flex:0 0 auto;background:url('icon-192.png') center/cover"></div><div><b>Welcome to notes</b><div class="muted" style="font-size:13.5px">Paste a GitHub token to connect your notes.</div></div></div>' : ''}
     <div class="field"><label>GitHub token — fine-grained, Contents: read &amp; write</label>
       <input id="token" type="password" placeholder="github_pat_…" value="${escapeAttr(LS.token)}" /></div>
     <div class="field"><label>Owner</label><input id="owner" value="${escapeAttr(LS.owner)}" /></div>
