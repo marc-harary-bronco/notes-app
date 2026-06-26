@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#4f46e5" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>notes</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous" />
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #6b7280; --line: #e5e7eb;
+    --card: #f9fafb; --accent: #4f46e5; --accent-fg: #ffffff; --danger: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --fg: #e6e6e6; --muted: #9aa0aa; --line: #262a33;
+      --card: #181b21; --accent: #7c7bff; --accent-fg: #ffffff; --danger: #f87171;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+  }
+  header {
+    position: sticky; top: 0; z-index: 10; background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    padding-top: calc(10px + env(safe-area-inset-top));
+  }
+  header h1 { font-size: 18px; margin: 0; font-weight: 700; letter-spacing: -.01em; flex: 0 0 auto; }
+  header .spacer { flex: 1; }
+  .icon-btn {
+    background: none; border: none; color: var(--fg); font-size: 20px;
+    padding: 6px 8px; cursor: pointer; border-radius: 8px; line-height: 1;
+  }
+  .icon-btn:active { background: var(--card); }
+  main { max-width: 820px; margin: 0 auto; padding: 14px; }
+  input, textarea, button { font: inherit; color: inherit; }
+  .search {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--card); margin-bottom: 12px;
+  }
+  .note-item {
+    display: block; width: 100%; text-align: left; background: var(--card);
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 8px; cursor: pointer;
+  }
+  .note-item:active { border-color: var(--accent); }
+  .note-item .title { font-weight: 600; }
+  .note-item .meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .fab {
+    position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom));
+    width: 56px; height: 56px; border-radius: 50%; border: none;
+    background: var(--accent); color: var(--accent-fg); font-size: 30px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.25); cursor: pointer; z-index: 20;
+  }
+  .btn {
+    background: var(--accent); color: var(--accent-fg); border: none;
+    padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 600;
+  }
+  .btn.secondary { background: var(--card); color: var(--fg); border: 1px solid var(--line); }
+  .btn.danger { background: none; color: var(--danger); border: 1px solid var(--line); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .field { display: block; margin-bottom: 12px; }
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .field input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  textarea.editor {
+    width: 100%; min-height: 60vh; padding: 12px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--card); resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px;
+  }
+  .md { word-wrap: break-word; }
+  .md h1,.md h2,.md h3 { line-height: 1.25; }
+  .md pre { background: var(--card); padding: 12px; border-radius: 10px; overflow:auto; }
+  .md code { background: var(--card); padding: 2px 5px; border-radius: 6px; font-size: .9em; }
+  .md pre code { padding: 0; }
+  .md blockquote { border-left: 3px solid var(--line); margin: 0; padding-left: 14px; color: var(--muted); }
+  .md table { border-collapse: collapse; }
+  .md th, .md td { border: 1px solid var(--line); padding: 6px 10px; }
+  .md img { max-width: 100%; }
+  .muted { color: var(--muted); }
+  .empty { text-align: center; color: var(--muted); padding: 40px 10px; }
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(24px + env(safe-area-inset-bottom)); background: var(--fg); color: var(--bg);
+    padding: 10px 16px; border-radius: 999px; font-size: 14px; z-index: 50; opacity: 0;
+    transition: opacity .2s; pointer-events: none; max-width: 90vw;
+  }
+  .toast.show { opacity: 1; }
+  .crumb { color: var(--muted); font-size: 13px; margin-bottom: 8px; word-break: break-all; }
+  .spin { display:inline-block; width:16px; height:16px; border:2px solid var(--muted);
+    border-top-color: transparent; border-radius:50%; animation: spin .7s linear infinite; vertical-align:-3px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>notes</h1>
+  <div class="spacer"></div>
+  <button class="icon-btn" id="refreshBtn" title="Refresh">⟳</button>
+  <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+</header>
+<main id="app"></main>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+<script>
+// ---------- config ----------
+const LS = {
+  get token() { return localStorage.getItem('gh_token') || ''; },
+  set token(v) { localStorage.setItem('gh_token', v); },
+  get owner() { return localStorage.getItem('gh_owner') || 'marc-harary-bronco'; },
+  set owner(v) { localStorage.setItem('gh_owner', v); },
+  get repo() { return localStorage.getItem('gh_repo') || 'notes'; },
+  set repo(v) { localStorage.setItem('gh_repo', v); },
+  get branch() { return localStorage.getItem('gh_branch') || 'main'; },
+  set branch(v) { localStorage.setItem('gh_branch', v); },
+};
+
+const app = document.getElementById('app');
+const toastEl = document.getElementById('toast');
+let TREE = [];           // cached list of {path, sha}
+let toastTimer = null;
+
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+}
+
+// ---------- base64 (utf-8 safe) ----------
+function b64encode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+function b64decode(b64) {
+  const bin = atob(b64.replace(/\s/g, ''));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+// ---------- github api ----------
+async function gh(path, opts = {}) {
+  if (!LS.token) throw new Error('No token set — open Settings (⚙) and paste a GitHub token.');
+  const res = await fetch('https://api.github.com' + path, {
+    ...opts,
+    headers: {
+      'Authorization': 'Bearer ' + LS.token,
+      'Accept': 'application/vnd.github+json',
+      ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(opts.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    let detail = res.status + ' ' + res.statusText;
+    try { const j = await res.json(); if (j.message) detail += ' — ' + j.message; } catch {}
+    throw new Error(detail);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+const repoBase = () => `/repos/${LS.owner}/${LS.repo}`;
+
+async function fetchTree() {
+  const data = await gh(`${repoBase()}/git/trees/${encodeURIComponent(LS.branch)}?recursive=1`);
+  TREE = (data.tree || [])
+    .filter(n => n.type === 'blob' && n.path.toLowerCase().endsWith('.md'))
+    .map(n => ({ path: n.path, sha: n.sha }));
+  // newest-feeling order: inbox/daily (timestamped) descending, then the rest A→Z
+  TREE.sort((a, b) => {
+    const ai = /^(inbox|daily)\//.test(a.path), bi = /^(inbox|daily)\//.test(b.path);
+    if (ai && bi) return b.path.localeCompare(a.path);
+    if (ai) return -1; if (bi) return 1;
+    return a.path.localeCompare(b.path);
+  });
+  return TREE;
+}
+
+async function getFile(path) {
+  const data = await gh(`${repoBase()}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(LS.branch)}`);
+  return { content: b64decode(data.content), sha: data.sha };
+}
+
+async function putFile(path, content, sha, message) {
+  const body = {
+    message: message || ('update ' + path),
+    content: b64encode(content),
+    branch: LS.branch,
+  };
+  if (sha) body.sha = sha;
+  return gh(`${repoBase()}/contents/${path.split('/').map(encodeURIComponent).join('/')}`, {
+    method: 'PUT', body: JSON.stringify(body),
+  });
+}
+
+async function deleteFile(path, sha, message) {
+  return gh(`${repoBase()}/contents/${path.split('/').map(encodeURIComponent).join('/')}`, {
+    method: 'DELETE',
+    body: JSON.stringify({ message: message || ('delete ' + path), sha, branch: LS.branch }),
+  });
+}
+
+// ---------- helpers ----------
+function stamp() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+function titleOf(path) {
+  return path.split('/').pop().replace(/\.md$/i, '');
+}
+function renderMarkdown(el, text) {
+  el.innerHTML = marked.parse(text || '');
+  if (window.renderMathInElement) {
+    try {
+      renderMathInElement(el, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+          { left: '\\(', right: '\\)', display: false },
+          { left: '\\[', right: '\\]', display: true },
+        ],
+        throwOnError: false,
+      });
+    } catch {}
+  }
+}
+
+// ---------- views ----------
+async function viewList() {
+  if (!LS.token) return viewSettings(true);
+  app.innerHTML = `<input class="search" id="search" placeholder="Search notes…" autocomplete="off" />
+                   <div id="list"><p class="empty"><span class="spin"></span> Loading…</p></div>`;
+  const listEl = document.getElementById('list');
+  const search = document.getElementById('search');
+  try {
+    await fetchTree();
+  } catch (e) {
+    listEl.innerHTML = `<p class="empty">Couldn't load notes.<br><span class="muted">${escapeHtml(e.message)}</span></p>`;
+    return;
+  }
+  function paint(filter = '') {
+    const f = filter.trim().toLowerCase();
+    const items = TREE.filter(n => !f || n.path.toLowerCase().includes(f));
+    if (!items.length) { listEl.innerHTML = `<p class="empty">No notes${f ? ' match.' : ' yet. Tap + to add one.'}</p>`; return; }
+    listEl.innerHTML = items.map(n => {
+      const dir = n.path.includes('/') ? n.path.slice(0, n.path.lastIndexOf('/')) : '';
+      return `<button class="note-item" data-path="${escapeAttr(n.path)}">
+        <div class="title">${escapeHtml(titleOf(n.path))}</div>
+        <div class="meta">${escapeHtml(dir || 'root')}</div></button>`;
+    }).join('');
+    listEl.querySelectorAll('.note-item').forEach(b =>
+      b.onclick = () => viewNote(b.dataset.path));
+  }
+  paint();
+  search.oninput = () => paint(search.value);
+
+  let fab = document.querySelector('.fab');
+  if (!fab) { fab = document.createElement('button'); fab.className = 'fab'; fab.textContent = '+'; document.body.appendChild(fab); }
+  fab.style.display = '';
+  fab.onclick = () => viewEdit(null);
+}
+
+async function viewNote(path) {
+  hideFab();
+  app.innerHTML = `<div class="crumb">${escapeHtml(path)}</div>
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn secondary" id="back">← Back</button>
+      <button class="btn" id="edit">Edit</button>
+      <button class="btn danger" id="del">Delete</button>
+    </div>
+    <div class="md" id="body"><p class="empty"><span class="spin"></span> Loading…</p></div>`;
+  document.getElementById('back').onclick = viewList;
+  let file;
+  try { file = await getFile(path); }
+  catch (e) { document.getElementById('body').innerHTML = `<p class="empty">${escapeHtml(e.message)}</p>`; return; }
+  renderMarkdown(document.getElementById('body'), file.content);
+  document.getElementById('edit').onclick = () => viewEdit({ path, content: file.content, sha: file.sha });
+  document.getElementById('del').onclick = async () => {
+    if (!confirm('Delete ' + path + '?')) return;
+    try { await deleteFile(path, file.sha); toast('Deleted'); viewList(); }
+    catch (e) { toast('Error: ' + e.message); }
+  };
+}
+
+function viewEdit(existing) {
+  hideFab();
+  const isNew = !existing;
+  const path = isNew ? `inbox/${stamp()}.md` : existing.path;
+  app.innerHTML = `
+    <div class="field">
+      <label>Path</label>
+      <input id="path" value="${escapeAttr(path)}" ${isNew ? '' : 'readonly'} />
+    </div>
+    <textarea class="editor" id="content" placeholder="Write markdown…">${isNew ? '' : escapeHtml(existing.content)}</textarea>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="save">Save</button>
+      <button class="btn secondary" id="cancel">Cancel</button>
+    </div>`;
+  const ta = document.getElementById('content');
+  if (isNew) setTimeout(() => ta.focus(), 50);
+  document.getElementById('cancel').onclick = () => isNew ? viewList() : viewNote(existing.path);
+  document.getElementById('save').onclick = async () => {
+    const p = document.getElementById('path').value.trim();
+    const c = ta.value;
+    if (!p) return toast('Path required');
+    const btn = document.getElementById('save');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      await putFile(p, c, isNew ? null : existing.sha, (isNew ? 'add ' : 'update ') + p);
+      toast('Saved');
+      await fetchTree().catch(() => {});
+      viewNote(p);
+    } catch (e) {
+      btn.disabled = false; btn.textContent = 'Save';
+      toast('Error: ' + e.message);
+    }
+  };
+}
+
+function viewSettings(firstRun) {
+  hideFab();
+  app.innerHTML = `
+    ${firstRun ? '<p class="muted">Welcome. Paste a GitHub token to connect your notes.</p>' : ''}
+    <div class="field"><label>GitHub token (fine-grained, Contents: read &amp; write)</label>
+      <input id="token" type="password" placeholder="github_pat_…" value="${escapeAttr(LS.token)}" /></div>
+    <div class="field"><label>Owner</label><input id="owner" value="${escapeAttr(LS.owner)}" /></div>
+    <div class="field"><label>Repo</label><input id="repo" value="${escapeAttr(LS.repo)}" /></div>
+    <div class="field"><label>Branch</label><input id="branch" value="${escapeAttr(LS.branch)}" /></div>
+    <div class="row">
+      <button class="btn" id="save">Save</button>
+      ${firstRun ? '' : '<button class="btn secondary" id="cancel">Cancel</button>'}
+    </div>
+    <p class="muted" style="margin-top:18px;font-size:13px">
+      Token is stored only on this device. Create one at github.com → Settings → Developer settings →
+      Fine-grained tokens, with <b>Contents: read &amp; write</b> on the notes repo.</p>`;
+  document.getElementById('save').onclick = () => {
+    LS.token = document.getElementById('token').value.trim();
+    LS.owner = document.getElementById('owner').value.trim();
+    LS.repo = document.getElementById('repo').value.trim();
+    LS.branch = document.getElementById('branch').value.trim() || 'main';
+    toast('Saved');
+    viewList();
+  };
+  const cancel = document.getElementById('cancel');
+  if (cancel) cancel.onclick = viewList;
+}
+
+function hideFab() { const f = document.querySelector('.fab'); if (f) f.style.display = 'none'; }
+
+// ---------- escaping ----------
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function escapeAttr(s) { return escapeHtml(s); }
+
+// ---------- wire up ----------
+document.getElementById('settingsBtn').onclick = () => viewSettings(false);
+document.getElementById('refreshBtn').onclick = () => viewList();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+viewList();
+</script>
+</body>
+</html>
