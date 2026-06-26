@@ -214,6 +214,7 @@
 <header>
   <div class="brand"><div class="dot"></div><h1>Notes</h1></div>
   <div class="spacer"></div>
+  <button class="icon-btn" id="remindersBtn" title="Reminders">🔔</button>
   <button class="icon-btn" id="refreshBtn" title="Refresh">⟳</button>
   <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
 </header>
@@ -234,6 +235,10 @@ const LS = {
   set repo(v) { localStorage.setItem('gh_repo', v); },
   get branch() { return localStorage.getItem('gh_branch') || 'main'; },
   set branch(v) { localStorage.setItem('gh_branch', v); },
+  get api() { return localStorage.getItem('rem_api') || ''; },
+  set api(v) { localStorage.setItem('rem_api', v); },
+  get apiSecret() { return localStorage.getItem('rem_secret') || ''; },
+  set apiSecret(v) { localStorage.setItem('rem_secret', v); },
 };
 
 const app = document.getElementById('app');
@@ -308,6 +313,37 @@ async function deleteFile(path, sha, message) {
   return gh(`${repoBase()}/contents/${encPath(path)}`, {
     method: 'DELETE', body: JSON.stringify({ message: message || ('delete ' + path), sha, branch: LS.branch }),
   });
+}
+
+// ---------- reminders backend ----------
+async function api(path, opts = {}) {
+  if (!LS.api || !LS.apiSecret) throw new Error('Reminders backend not set up — open Settings (⚙).');
+  const res = await fetch(LS.api.replace(/\/+$/, '') + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + LS.apiSecret, ...(opts.body ? { 'Content-Type': 'application/json' } : {}), ...(opts.headers || {}) },
+  });
+  if (!res.ok) { let d = res.status + ' ' + res.statusText; try { const j = await res.json(); if (j.error) d += ' — ' + j.error; } catch {} throw new Error(d); }
+  return res.status === 204 ? null : res.json();
+}
+function urlB64ToBytes(b64) {
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const s = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(s); const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+async function enableNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window))
+    throw new Error('Push not available here. On iPhone: add the app to your Home Screen and open it from there first.');
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') throw new Error('Permission denied.');
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    const { publicKey } = await api('/vapidPublicKey');
+    sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToBytes(publicKey) });
+  }
+  await api('/subscribe', { method: 'POST', body: JSON.stringify({ subscription: sub.toJSON ? sub.toJSON() : sub }) });
 }
 
 // ---------- helpers ----------
@@ -507,6 +543,69 @@ function viewEdit(existing) {
   };
 }
 
+async function viewReminders() {
+  hideFab();
+  if (!LS.api || !LS.apiSecret) { toast('Set up the reminders backend in Settings first'); return viewSettings(false); }
+  const granted = (typeof Notification !== 'undefined' && Notification.permission === 'granted');
+  app.innerHTML = `
+    <div class="row" style="margin-bottom:14px"><button class="btn secondary" id="back">← Back</button></div>
+    ${granted ? '' : `<div class="card-pane" style="margin-bottom:14px">
+      <b>Turn on notifications</b>
+      <div class="muted" style="font-size:13.5px;margin:5px 0 11px">On iPhone, add this app to your Home Screen and open it from there, then tap below.</div>
+      <button class="btn" id="enable">Enable notifications</button></div>`}
+    <div class="card-pane" style="margin-bottom:16px">
+      <div class="field"><label>Reminder</label><input id="rtext" placeholder="e.g. Submit the DV report" /></div>
+      <div class="field"><label>When</label><input id="rwhen" type="datetime-local" /></div>
+      <div class="row"><button class="btn" id="add">Add reminder</button>
+        <button class="btn secondary" id="test">Send test</button></div>
+    </div>
+    <div class="section-label">Reminders<span class="count" id="cnt">·</span></div>
+    <div id="rlist"><div class="skeleton"></div></div>`;
+  document.getElementById('back').onclick = viewList;
+  const enableBtn = document.getElementById('enable');
+  if (enableBtn) enableBtn.onclick = async () => {
+    enableBtn.disabled = true; enableBtn.textContent = 'Enabling…';
+    try { await enableNotifications(); toast('Notifications on'); viewReminders(); }
+    catch (e) { enableBtn.disabled = false; enableBtn.textContent = 'Enable notifications'; toast(e.message); }
+  };
+  document.getElementById('test').onclick = async () => {
+    try { const r = await api('/test', { method: 'POST' }); toast(`Test sent (${r.sent}/${r.subscribers})`); }
+    catch (e) { toast('Error: ' + e.message); }
+  };
+  document.getElementById('add').onclick = async () => {
+    const text = document.getElementById('rtext').value.trim();
+    const whenVal = document.getElementById('rwhen').value;
+    if (!text) return toast('Enter a reminder');
+    if (!whenVal) return toast('Pick a time');
+    const dueAt = new Date(whenVal).getTime();
+    const btn = document.getElementById('add'); btn.disabled = true; btn.textContent = 'Adding…';
+    try { await api('/reminders', { method: 'POST', body: JSON.stringify({ text, dueAt }) }); toast('Reminder set'); viewReminders(); }
+    catch (e) { btn.disabled = false; btn.textContent = 'Add reminder'; toast('Error: ' + e.message); }
+  };
+  const listEl = document.getElementById('rlist');
+  try {
+    const { reminders } = await api('/reminders');
+    document.getElementById('cnt').textContent = reminders.length;
+    if (!reminders.length) { listEl.innerHTML = `<div class="empty">No reminders yet.</div>`; return; }
+    listEl.innerHTML = reminders.map(r => {
+      const when = new Date(r.dueAt).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      const status = r.sent ? 'sent ✓' : (r.dueAt < Date.now() ? 'due' : 'upcoming');
+      return `<div class="note-item" style="cursor:default">
+        <span class="glyph">🔔</span>
+        <span class="body"><span class="title">${escapeHtml(r.text)}</span>
+          <span class="sub">${escapeHtml(when)} · ${status}</span></span>
+        <button class="btn danger" data-id="${escapeAttr(r.id)}" style="padding:6px 12px">✕</button>
+      </div>`;
+    }).join('');
+    listEl.querySelectorAll('button[data-id]').forEach(b => b.onclick = async () => {
+      try { await api('/reminders?id=' + encodeURIComponent(b.dataset.id), { method: 'DELETE' }); toast('Deleted'); viewReminders(); }
+      catch (e) { toast('Error: ' + e.message); }
+    });
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty"><div class="big">⚠️</div>${escapeHtml(e.message)}</div>`;
+  }
+}
+
 function viewSettings(firstRun) {
   hideFab();
   app.innerHTML = `
@@ -516,6 +615,9 @@ function viewSettings(firstRun) {
     <div class="field"><label>Owner</label><input id="owner" value="${escapeAttr(LS.owner)}" /></div>
     <div class="field"><label>Repo</label><input id="repo" value="${escapeAttr(LS.repo)}" /></div>
     <div class="field"><label>Branch</label><input id="branch" value="${escapeAttr(LS.branch)}" /></div>
+    <div class="section-label" style="margin-left:0">Reminders backend</div>
+    <div class="field"><label>Backend URL</label><input id="api" value="${escapeAttr(LS.api)}" placeholder="https://notes-reminders.<you>.workers.dev" /></div>
+    <div class="field"><label>Reminders secret</label><input id="apisecret" type="password" value="${escapeAttr(LS.apiSecret)}" placeholder="paste app secret" /></div>
     <div class="row">
       <button class="btn" id="save">Save</button>
       ${firstRun ? '' : '<button class="btn secondary" id="cancel">Cancel</button>'}
@@ -528,6 +630,8 @@ function viewSettings(firstRun) {
     LS.owner = document.getElementById('owner').value.trim();
     LS.repo = document.getElementById('repo').value.trim();
     LS.branch = document.getElementById('branch').value.trim() || 'main';
+    LS.api = document.getElementById('api').value.trim();
+    LS.apiSecret = document.getElementById('apisecret').value.trim();
     toast('Saved'); viewList();
   };
   const cancel = document.getElementById('cancel');
@@ -539,6 +643,7 @@ function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;
 const escapeAttr = escapeHtml;
 
 document.getElementById('settingsBtn').onclick = () => viewSettings(false);
+document.getElementById('remindersBtn').onclick = () => viewReminders();
 document.getElementById('refreshBtn').onclick = () => viewList();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 viewList();
