@@ -8,7 +8,8 @@
 <link rel="apple-touch-icon" href="icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>notes</title>
+<meta name="apple-mobile-web-app-title" content="Notes" />
+<title>Notes</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous" />
 <style>
   :root {
@@ -187,11 +188,31 @@
     background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--fg) 6%, transparent), transparent);
     animation: shimmer 1.3s infinite; }
   @keyframes shimmer { to { transform: translateX(100%); } }
+
+  .today {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 13%, var(--card)), var(--card));
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+    border-radius: 16px; padding: 14px; margin-bottom: 16px; box-shadow: var(--shadow);
+  }
+  .today-head { display: flex; align-items: center; gap: 11px; }
+  .today-head .t-icon {
+    width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; font-size: 19px;
+    background: color-mix(in srgb, var(--accent) 18%, var(--card));
+  }
+  .today-head .t-title { font-weight: 700; letter-spacing: -.01em; }
+  .today-head .t-date { color: var(--muted); font-size: 12.5px; }
+  .today-head .t-open { margin-left: auto; }
+  .t-add { display: flex; gap: 8px; margin-top: 12px; }
+  .t-add input {
+    flex: 1; min-width: 0; padding: 10px 13px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--bg); transition: border-color .15s, box-shadow .15s;
+  }
+  .t-add input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent); }
 </style>
 </head>
 <body>
 <header>
-  <div class="brand"><div class="dot"></div><h1>notes</h1></div>
+  <div class="brand"><div class="dot"></div><h1>Notes</h1></div>
   <div class="spacer"></div>
   <button class="icon-btn" id="refreshBtn" title="Refresh">⟳</button>
   <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
@@ -294,6 +315,28 @@ function stamp() {
   const d = new Date(), p = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 }
+const todayISO = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; };
+const nowHM = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${p(d.getHours())}:${p(d.getMinutes())}`; };
+const todayPath = () => `daily/${todayISO()}.md`;
+const prettyToday = () => new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+async function ensureToday() {
+  try { return await getFile(todayPath()); }
+  catch (e) {
+    if (!/404|Not Found/i.test(e.message)) throw e;
+    await putFile(todayPath(), `# ${todayISO()}\n\n`, null, `daily: ${todayISO()}`);
+    return getFile(todayPath());
+  }
+}
+async function appendToday(text) {
+  let content = '', sha = null;
+  try { const f = await getFile(todayPath()); content = f.content; sha = f.sha; }
+  catch (e) { if (!/404|Not Found/i.test(e.message)) throw e; }
+  if (!content.trim()) content = `# ${todayISO()}\n\n`;
+  if (!content.endsWith('\n')) content += '\n';
+  const t = nowHM();
+  content += `- ${t} — ${text}\n`;
+  await putFile(todayPath(), content, sha, `daily: ${todayISO()} ${t}`);
+}
 const titleOf = path => path.split('/').pop().replace(/\.md$/i, '');
 const topDir = path => { const i = path.indexOf('/'); return i === -1 ? '' : path.slice(0, i); };
 const subDir = path => { // dir between top and file, e.g. research/ideas/x.md -> "ideas"
@@ -326,6 +369,17 @@ function renderMarkdown(el, text) {
 async function viewList() {
   if (!LS.token) return viewSettings(true);
   app.innerHTML = `
+    <div class="today">
+      <div class="today-head">
+        <span class="t-icon">📅</span>
+        <div><div class="t-title">Today's log</div><div class="t-date">${escapeHtml(prettyToday())}</div></div>
+        <button class="btn secondary t-open" id="openToday">Open ›</button>
+      </div>
+      <div class="t-add">
+        <input id="todayInput" placeholder="Summarize something from today…" autocomplete="off" />
+        <button class="btn" id="todayAdd">Add</button>
+      </div>
+    </div>
     <div class="search-wrap">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       <input class="search" id="search" placeholder="Search notes…" autocomplete="off" />
@@ -371,6 +425,28 @@ async function viewList() {
   }
   paint();
   search.oninput = () => paint(search.value);
+
+  // Today's log wiring
+  document.getElementById('openToday').onclick = async () => {
+    try { await ensureToday(); viewNote(todayPath()); }
+    catch (e) { toast('Error: ' + e.message); }
+  };
+  const ti = document.getElementById('todayInput');
+  const tadd = document.getElementById('todayAdd');
+  async function addTodayLine() {
+    const v = ti.value.trim();
+    if (!v) return;
+    tadd.disabled = true; ti.disabled = true;
+    try {
+      await appendToday(v);
+      ti.value = ''; toast('Added to today');
+      await fetchTree().catch(() => {});
+      paint(search.value);
+    } catch (e) { toast('Error: ' + e.message); }
+    finally { tadd.disabled = false; ti.disabled = false; ti.focus(); }
+  }
+  tadd.onclick = addTodayLine;
+  ti.onkeydown = e => { if (e.key === 'Enter') addTodayLine(); };
 
   let fab = document.querySelector('.fab');
   if (!fab) { fab = document.createElement('button'); fab.className = 'fab'; fab.textContent = '+'; document.body.appendChild(fab); }

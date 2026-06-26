@@ -1,6 +1,6 @@
 {
-  "name": "notes",
-  "short_name": "notes",
+  "name": "Notes",
+  "short_name": "Notes",
   "description": "My markdown notes, backed by GitHub",
   "start_url": ".",
   "scope": ".",
