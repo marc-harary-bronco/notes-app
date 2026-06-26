@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <!-- a single petal, pointing up from the centre -->
+    <path id="petal" d="M0,0 C 26,-34 26,-104 0,-150 C -26,-104 -26,-34 0,0 Z"/>
+    <path id="leaf" d="M0,0 C 18,-20 18,-60 0,-86 C -18,-60 -18,-20 0,0 Z"/>
+  </defs>
+
+  <!-- ceramic background -->
+  <rect width="512" height="512" fill="#eef1ea"/>
+  <rect width="512" height="512" fill="#f6f4ec"/>
+
+  <!-- corner quarter-rosettes -->
+  <g fill="#3f74c2">
+    <g transform="translate(0,0)">
+      <use href="#leaf" transform="translate(0,0) rotate(135)"/>
+      <use href="#leaf" transform="translate(0,0) rotate(180)"/>
+      <use href="#leaf" transform="translate(0,0) rotate(225)"/>
+      <circle r="13"/>
+    </g>
+    <g transform="translate(512,0)">
+      <use href="#leaf" transform="rotate(180)"/>
+      <use href="#leaf" transform="rotate(225)"/>
+      <use href="#leaf" transform="rotate(270)"/>
+      <circle r="13"/>
+    </g>
+    <g transform="translate(0,512)">
+      <use href="#leaf" transform="rotate(90)"/>
+      <use href="#leaf" transform="rotate(45)"/>
+      <use href="#leaf" transform="rotate(0)"/>
+      <circle r="13"/>
+    </g>
+    <g transform="translate(512,512)">
+      <use href="#leaf" transform="rotate(0)"/>
+      <use href="#leaf" transform="rotate(315)"/>
+      <use href="#leaf" transform="rotate(270)"/>
+      <circle r="13"/>
+    </g>
+  </g>
+
+  <!-- double border frame -->
+  <rect x="34" y="34" width="444" height="444" fill="none" stroke="#1b4ea0" stroke-width="11"/>
+  <rect x="52" y="52" width="408" height="408" fill="none" stroke="#1b4ea0" stroke-width="4"/>
+
+  <!-- central rosette -->
+  <g transform="translate(256,256)">
+    <!-- outer light petals (8) -->
+    <g fill="#9cc0ec">
+      <use href="#petal" transform="rotate(0)"/>
+      <use href="#petal" transform="rotate(45)"/>
+      <use href="#petal" transform="rotate(90)"/>
+      <use href="#petal" transform="rotate(135)"/>
+      <use href="#petal" transform="rotate(180)"/>
+      <use href="#petal" transform="rotate(225)"/>
+      <use href="#petal" transform="rotate(270)"/>
+      <use href="#petal" transform="rotate(315)"/>
+    </g>
+    <!-- inner deep-blue petals (4, scaled) -->
+    <g fill="#1b4ea0" transform="scale(0.66)">
+      <use href="#petal" transform="rotate(0)"/>
+      <use href="#petal" transform="rotate(90)"/>
+      <use href="#petal" transform="rotate(180)"/>
+      <use href="#petal" transform="rotate(270)"/>
+    </g>
+    <!-- diagonal accent petals -->
+    <g fill="#3f74c2" transform="scale(0.5)">
+      <use href="#petal" transform="rotate(45)"/>
+      <use href="#petal" transform="rotate(135)"/>
+      <use href="#petal" transform="rotate(225)"/>
+      <use href="#petal" transform="rotate(315)"/>
+    </g>
+    <!-- centre flower -->
+    <circle r="34" fill="#f6f4ec"/>
+    <circle r="34" fill="none" stroke="#1b4ea0" stroke-width="5"/>
+    <circle r="11" fill="#1b4ea0"/>
+  </g>
+</svg>
