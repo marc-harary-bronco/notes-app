@@ -8,8 +8,8 @@
 <link rel="apple-touch-icon" href="icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Notes" />
-<title>Notes</title>
+<meta name="apple-mobile-web-app-title" content="Azulejo" />
+<title>Azulejo</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous" />
 <style>
   :root {
@@ -52,15 +52,14 @@
   }
   .brand { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
   .brand .dot {
-    width: 24px; height: 24px; border-radius: 7px;
-    background: url('icon-192.png') center/cover, #f6f4ec;
-    box-shadow: 0 1px 4px rgba(0,0,0,.18);
+    width: 28px; height: 28px; border-radius: 0;
+    background: url('icon-192.png') center/cover;
   }
   header h1 { font-size: 19px; margin: 0; font-weight: 750; letter-spacing: -.02em; }
   header .spacer { flex: 1; }
   .icon-btn {
-    background: none; border: none; color: var(--muted); font-size: 19px;
-    width: 38px; height: 38px; cursor: pointer; border-radius: 10px; line-height: 1;
+    background: none; border: none; color: var(--muted);
+    width: 44px; height: 44px; cursor: pointer; border-radius: 11px; line-height: 1;
     display: grid; place-items: center; transition: background .15s, color .15s;
   }
   .icon-btn:hover { color: var(--fg); background: var(--card); }
@@ -212,11 +211,11 @@
 </head>
 <body>
 <header>
-  <div class="brand"><div class="dot"></div><h1>Notes</h1></div>
+  <div class="brand"><div class="dot"></div><h1>Azulejo</h1></div>
   <div class="spacer"></div>
-  <button class="icon-btn" id="remindersBtn" title="Reminders">🔔</button>
-  <button class="icon-btn" id="refreshBtn" title="Refresh">⟳</button>
-  <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+  <button class="icon-btn" id="remindersBtn" title="Reminders"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+  <button class="icon-btn" id="refreshBtn" title="Refresh"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
+  <button class="icon-btn" id="settingsBtn" title="Settings"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
 </header>
 <main id="app"></main>
 <div class="toast" id="toast"></div>
@@ -380,8 +379,24 @@ const subDir = path => { // dir between top and file, e.g. research/ideas/x.md -
   return parts.slice(1).join('/');
 };
 function hueFor(name) { let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
-const GLYPHS = { inbox: '📥', daily: '📅', research: '🔬', work: '🛠️', ideas: '💡', reading: '📖', scratch: '✏️', '': '📄' };
-const glyphFor = name => GLYPHS[name] || '📁';
+const ICON = {
+  inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  daily: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  research: '<path d="M9 3h6"/><path d="M10 3v6l-5.2 8.6A2 2 0 0 0 6.5 21h11a2 2 0 0 0 1.7-3.4L14 9V3"/><line x1="8" y1="14" x2="16" y2="14"/>',
+  work: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+  ideas: '<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a6 6 0 0 0-4 10.5c.8.8 1.3 1.5 1.5 2.5h5c.2-1 .7-1.7 1.5-2.5A6 6 0 0 0 12 2z"/>',
+  reading: '<path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/>',
+  scratch: '<path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+  folder: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+  bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+};
+function svgIcon(name, size = 20) {
+  const p = ICON[name] || ICON.folder;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+}
+const FOLDER_ICON = { inbox: 'inbox', daily: 'daily', research: 'research', work: 'work', ideas: 'ideas', reading: 'reading', scratch: 'scratch', '': 'file' };
+const glyphFor = name => svgIcon(FOLDER_ICON[name] || 'folder', 20);
 const SECTION_ORDER = ['inbox', 'daily', 'research', 'work'];
 const prettyDir = name => name === '' ? 'Top level' : name;
 
@@ -443,10 +458,9 @@ async function viewList() {
       return a.localeCompare(b);
     });
     listEl.innerHTML = keys.map(k => {
-      const hue = k === '' ? 230 : hueFor(k);
       const rows = groups[k].map(n => {
         const sd = subDir(n.path);
-        return `<button class="note-item" style="--pill:hsl(${hue} 70% 55%)" data-path="${escapeAttr(n.path)}">
+        return `<button class="note-item" data-path="${escapeAttr(n.path)}">
           <span class="glyph">${glyphFor(k)}</span>
           <span class="body">
             <span class="title">${escapeHtml(titleOf(n.path))}</span>
@@ -455,7 +469,7 @@ async function viewList() {
           <span class="chev">›</span>
         </button>`;
       }).join('');
-      return `<div class="section-label" style="color:hsl(${hue} 45% 50%)">${escapeHtml(prettyDir(k))}<span class="count">${groups[k].length}</span></div>${rows}`;
+      return `<div class="section-label" style="color:var(--accent)">${escapeHtml(prettyDir(k))}<span class="count">${groups[k].length}</span></div>${rows}`;
     }).join('');
     listEl.querySelectorAll('.note-item').forEach(b => b.onclick = () => viewNote(b.dataset.path));
   }
@@ -591,7 +605,7 @@ async function viewReminders() {
       const when = new Date(r.dueAt).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
       const status = r.sent ? 'sent ✓' : (r.dueAt < Date.now() ? 'due' : 'upcoming');
       return `<div class="note-item" style="cursor:default">
-        <span class="glyph">🔔</span>
+        <span class="glyph">${svgIcon('bell', 20)}</span>
         <span class="body"><span class="title">${escapeHtml(r.text)}</span>
           <span class="sub">${escapeHtml(when)} · ${status}</span></span>
         <button class="btn danger" data-id="${escapeAttr(r.id)}" style="padding:6px 12px">✕</button>
@@ -609,7 +623,7 @@ async function viewReminders() {
 function viewSettings(firstRun) {
   hideFab();
   app.innerHTML = `
-    ${firstRun ? '<div class="card-pane" style="margin-bottom:16px;display:flex;gap:12px;align-items:center"><div class="dot" style="width:34px;height:34px;border-radius:10px;flex:0 0 auto;background:url(icon-192.png) center/cover"></div><div><b>Welcome to notes</b><div class="muted" style="font-size:13.5px">Paste a GitHub token to connect your notes.</div></div></div>' : ''}
+    ${firstRun ? '<div class="card-pane" style="margin-bottom:16px;display:flex;gap:12px;align-items:center"><div class="dot" style="width:34px;height:34px;border-radius:10px;flex:0 0 auto;background:url(icon-192.png) center/cover"></div><div><b>Welcome to Azulejo</b><div class="muted" style="font-size:13.5px">Paste a GitHub token to connect your notes.</div></div></div>' : ''}
     <div class="field"><label>GitHub token — fine-grained, Contents: read &amp; write</label>
       <input id="token" type="password" placeholder="github_pat_…" value="${escapeAttr(LS.token)}" /></div>
     <div class="field"><label>Owner</label><input id="owner" value="${escapeAttr(LS.owner)}" /></div>

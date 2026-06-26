@@ -1,6 +1,6 @@
 // Minimal service worker — caches the app shell so it installs and opens fast.
 // Notes themselves are always fetched live from the GitHub API (never cached here).
-const CACHE = 'notes-shell-v9';
+const CACHE = 'notes-shell-v10';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
