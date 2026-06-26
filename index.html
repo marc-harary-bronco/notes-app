@@ -609,7 +609,7 @@ async function viewReminders() {
 function viewSettings(firstRun) {
   hideFab();
   app.innerHTML = `
-    ${firstRun ? '<div class="card-pane" style="margin-bottom:16px;display:flex;gap:12px;align-items:center"><div class="dot" style="width:34px;height:34px;border-radius:10px;flex:0 0 auto;background:url('icon-192.png') center/cover"></div><div><b>Welcome to notes</b><div class="muted" style="font-size:13.5px">Paste a GitHub token to connect your notes.</div></div></div>' : ''}
+    ${firstRun ? '<div class="card-pane" style="margin-bottom:16px;display:flex;gap:12px;align-items:center"><div class="dot" style="width:34px;height:34px;border-radius:10px;flex:0 0 auto;background:url(icon-192.png) center/cover"></div><div><b>Welcome to notes</b><div class="muted" style="font-size:13.5px">Paste a GitHub token to connect your notes.</div></div></div>' : ''}
     <div class="field"><label>GitHub token — fine-grained, Contents: read &amp; write</label>
       <input id="token" type="password" placeholder="github_pat_…" value="${escapeAttr(LS.token)}" /></div>
     <div class="field"><label>Owner</label><input id="owner" value="${escapeAttr(LS.owner)}" /></div>
